@@ -370,8 +370,8 @@ typedef struct
   UINT    uBinAverageMode;    // BIN(求均值)的模式,范围不能超过tSdkResolutionRange中uBinAverageModeMask
   UINT    uSkipMode;          // 是否SKIP的尺寸，为0表示禁止SKIP模式，范围不能超过tSdkResolutionRange中uSkipModeMask
   UINT    uResampleMask;      // 硬件重采样的掩码
-  INT     iHOffsetFOV;        // 采集视场相对于Sensor最大视场左上角的垂直偏移
-  INT     iVOffsetFOV;        // 采集视场相对于Sensor最大视场左上角的水平偏移
+  INT     iHOffsetFOV;        // 采集视场相对于Sensor最大视场左上角的水平偏移
+  INT     iVOffsetFOV;        // 采集视场相对于Sensor最大视场左上角的垂直偏移
   INT     iWidthFOV;          // 采集视场的宽度
   INT     iHeightFOV;         // 采集视场的高度
   INT     iWidth;             // 相机最终输出的图像的宽度

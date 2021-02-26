@@ -44,7 +44,7 @@
 
 #define Lights_High  0.6
 #define L_Armoe_WH_Radio 1
-#define U_Armoe_WH_Radio 4.5
+#define U_Armoe_WH_Radio 4.8
 #define Armor_Parallel_Radio 0.57
 
 
