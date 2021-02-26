@@ -394,7 +394,7 @@ public:
 				predict(present, frame);				// 小符预测
 			else
 			{
-				if (valid_speed_num < 100)
+                if (valid_speed_num < 50)
 					predict(present, frame);
 				else
 					bigPredict4(present, former, frame);	// 大符预测 --- 牛逼方案
@@ -605,10 +605,10 @@ public:
 		/********计算时延*******/
         int max_idx = calculateBias(arr, measureW);
 		/********计算幅度*******/
-		//double AA = calculateA(arr, 0.0384);
+        //double AA = calculateA(arr, measureW);
 
-		TA = 0.785;//0.785
-		TC = 1.305;//1.305
+        TA = 0.65;//0.785
+        TC = 1.305;//1.305
         TW = measureW;//0.0384 // 0.01// 0.0000
 		BIAS = max_idx;	
 	}
@@ -659,7 +659,7 @@ public:
 
 	double bigRunePredict(double frame_num)
 	{
-        if (valid_speed_num == 100 || valid_speed_num % 300 == 0)
+        if (valid_speed_num == 50 || valid_speed_num % 50 == 0)
 			bigRunePraPredict();
 		int idx = valid_speed_num;
 		double preSpeed = TA * sin(TW * (idx - BIAS)) + TC;
@@ -670,8 +670,8 @@ public:
 //        std::cout << "TW: " << TW << std::endl;
 //        std::cout << "BIAS: " << BIAS<< std::endl;
 //        std::cout << "preSpeed: " << preSpeed << std::endl;
-//        std::cout << "meanSpeed: " << meanSpeed << std::endl;
-//        std::cout << "A" << TA << std::endl;
+        std::cout << "meanSpeed: " << meanSpeed << std::endl;
+        std::cout << "A" << TA << std::endl;
 		return preAngle;
 	}
 };

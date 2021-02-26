@@ -103,18 +103,18 @@ void Armordetection::color_detection(int color_detection_mode, bool show_mask)  
          Mat thres_whole;
          vector<Mat> splited;
          Mat color,mask;
-         int thres_max_color_blue = 30;
+         int thres_max_color_blue = 60;
          split(_roi,splited);
          cvtColor(_roi,thres_whole,CV_BGR2GRAY);
 
-         threshold(thres_whole,thres_whole,60,255,THRESH_BINARY);
-//         namedWindow("thresh_whole", 0);
-//         imshow("thresh_whole", thres_whole);
+         threshold(thres_whole,thres_whole,70,255,THRESH_BINARY);
+         namedWindow("thresh_whole", 0);
+         imshow("thresh_whole", thres_whole);
          subtract(splited[0],splited[2], color);
          threshold(color, mask, thres_max_color_blue,255,THRESH_BINARY);
          dilate(mask, mask,getStructuringElement(MORPH_RECT,Size(3,3)));
-//         namedWindow("th", 0);
-//         imshow("th", mask);
+         namedWindow("th", 0);
+         imshow("th", mask);
          Size m_Size = mask.size();
          Mat Temp = Mat::zeros(m_Size.height + 2, m_Size.width + 2, mask.type());//延展图像
          mask.copyTo(Temp(Range(1, m_Size.height + 1), Range(1, m_Size.width + 1)));
@@ -122,8 +122,8 @@ void Armordetection::color_detection(int color_detection_mode, bool show_mask)  
          Mat cutImg;//裁剪延展的图像
          Temp(Range(1, m_Size.height + 1), Range(1, m_Size.width + 1)).copyTo(cutImg);
          mask = mask | (~cutImg);
-//         namedWindow("floodFill", 0);
-//         imshow("floodFill", mask);
+         namedWindow("floodFill", 0);
+         imshow("floodFill", mask);
          mask = mask & thres_whole;
          _mask = mask.clone();
         }
@@ -294,34 +294,41 @@ vector<vector<Point>> Armordetection::light_filter(bool show_light_filter_result
     for(const vector<Point>& contour : contours)
     {
         rect=minAreaRect(contour);
+        Point2f points[4];
+        rect.points(points);
+        for (int j = 0; j < 4; j++)
+        {
+            line(_img, points[j], points[(j + 1) % 4], Scalar(128, 0, 128),4, CV_AA);
+        }
         // k是旋转矩形的长宽比
         double k = min(rect.size.width, rect.size.height) / max(rect.size.width, rect.size.height);
         // 灯条的面积
         float lightContourArea = contourArea(contour);
 
-        if(lightContourArea <10){/*cout<<"LIGHT:lightContourArea"<<lightContourArea<<endl*/;continue;}
+        if(lightContourArea <10){cout<<"LIGHT:lightContourArea"<<lightContourArea<<endl;continue;}
         // 灯条面积太小的不要，注意这里可以再分细一点
         // 由于灯条刚刚转过来的时候，面积很小，w/h比也很小，可以结合这两个来筛选
         // 从而保证刚刚转过来的面积很小的灯条不会被筛选掉
         // 面积很小， w/h也要很小才保留
-        if(lightContourArea < 280 && k > 0.4) {/* cout<<"LIGHT:lightContourArea"<<lightContourArea<<endl;*/ /*cout<<"1"<<endl;*/   continue;}
-//        // 面积更小， w/h也要更小才保留
-        if(lightContourArea < 47 && k > 0.3)  {/*cout<<"LIGHT:lightContourArea"<<lightContourArea<<endl;*/ /*cout<<"2"<<endl; */ continue;}
+//        if(lightContourArea < 280 && k > 0.4) { cout<<"LIGHT:lightContourArea"<<lightContourArea<<endl; /*cout<<"1"<<endl;*/   continue;}
+////        // 面积更小， w/h也要更小才保留
+//        if(lightContourArea < 47 && k > 0.3)  {cout<<"LIGHT:lightContourArea"<<lightContourArea<<endl; /*cout<<"2"<<endl; */ continue;}
 
         // 灯条面积太大的不要
         if(lightContourArea > MAX_LightContourArea) {cout<<"area3"<<endl; continue;}
 
         // 旋转矩形长宽比太大的灯条不要  // 太胖的不要
-        if( k > MAX_LightHighWeigh ) {cout<<"light4    "<<k<<endl; continue;}
+        if( k > MAX_LightHighWeigh ) {cout<<"light4 "<<k<<endl; continue;}
 
         // 灯条左右倾斜超过一定角度的不要
         if (rect.size.width == min(rect.size.width, rect.size.height) &&
-            fabs(rect.angle) > MAX_LightAngle1 ) {cout<<"anglr5"<<endl;continue;}
+            fabs(rect.angle) > MAX_LightAngle1 ) {cout<<"angle5"<<fabs(rect.angle)<<endl;continue;}
         if (rect.size.width == max(rect.size.width, rect.size.height) &&
-            fabs(rect.angle) < MAX_LightAngle2 ) {cout<<"anglr6"<<endl; continue;}
+            fabs(rect.angle) < MAX_LightAngle2 ) {cout<<"angle6"<<endl; continue;}
 
         //灯条的凸度，即灯条面积比旋转矩形面积，对预处理要求较高，暂时不采用
         //if(lightContourArea /  rect.size.area() < 0.4) {/*cout<<"7"<<endl;*/ continue;}
+
 
         contours_filter.push_back(contour);
     }
