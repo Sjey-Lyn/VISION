@@ -1,8 +1,5 @@
-//#define tiaoche
+#define tiaoche
 #ifdef tiaoche
-
-
-
 
 #include<iostream>
 #include<opencv2/opencv.hpp>
@@ -22,20 +19,17 @@
 #include<fstream>
 //#include "object_predict.h"
 //#include "rp_kalman.h"
+
 using namespace cv;
 using namespace std;
 
 
-//main_information main_info;
-
-
-
-//////////////////掉帧处理全局变量//////////////////////
+///////////////////掉帧处理全局变量///////////////////
 //#define diaozhen
 float last_pitch=0,last_yaw=0,last_dis=0;     //存掉帧信息（pitch，yaw，dist）的全局变量
 int find_index=0;                            //持续帧数
 int lost_index=0;                             //掉帧
-//////////////////掉帧处理全局变量2//////////////////////
+///////////////////掉帧处理全局变量2///////////////////
 //#define DEAL_DIAOZHEN
 #define VECTOR_MAX 20
 #define LOST_OBJECT 10
@@ -46,28 +40,19 @@ double last_dantance;
 /////////////////////////////////////////////////////
 
 
-
-
-//////////相机的东西//////////////////
-int mode = 1  , buff_four, shoot_speed, my_color;
+///////////////////相机的东西///////////////////
 unsigned char * g_pRgbBuffer;     //处理后数据缓存区
 int hCamera;
 int                     iStatus=-1;
 tSdkFrameHead           sFrameInfo;
 BYTE*			        pbyBuffer;
-
-
-
-
-
+//////////////////////////////////////////////
 
 double time_now;    //当前时间
 double time_last;   //上一次时间
 
 volatile unsigned int prdIdx;   //线程锁
 volatile unsigned int csmIdx;   //线程锁
-
-
 
 
 #define BUFFER_SIZE 1   //图片缓冲区
@@ -78,24 +63,27 @@ struct ImageData {
 ImageData data[BUFFER_SIZE];
 
 
-
-
 //VideoWriter vw("videoTest.avi",VideoWriter::fourcc('M','J','P','G'),25,Size(1280,720),true); // 定义写入视频对象
 
+
+///////////////////串口///////////////////
 SerialPort port("/dev/ttyUSB0");    //ls /dev/
 VisionData vdata;
+int mode = 1  , buff_four, shoot_speed, my_color;
+/////////////////////////////////////////
+
+
+
+
 
 
 void init_camera()
 {
-    /// 相机的东西
+    ///////////////////初始化///////////////////
     //////////////// Describe Appliance Info ////////////////////
     int                     iCameraCounts = 1;
-
     tSdkCameraDevInfo       tCameraEnumList;
-
     tSdkCameraCapbility     tCapability;      //设备描述信息
-
     int                     channel=3;
     ////////////////// Init Camera //////////////////////////////
     CameraSdkInit(1);
@@ -124,12 +112,12 @@ void init_camera()
     触发帧以后才会更新图像。    */
     CameraPlay(hCamera);
     CameraSetAeState(hCamera, FALSE);   //FALSE为手动曝光，TRUE为自动曝光
-    ////////////////////// End ////////////////////////////////////////
+    //////////////////////////////////////////////////////////////
 
 
 
 
-    //////////////////////设置硬触发////////////////
+    ///////////////////设置硬触发///////////////////
     //    CameraSetTriggerMode(hCamera,2);
     //    // 设置硬触发的触发方式
     //    CameraSetExtTrigSignalType(hCamera,EXT_TRIG_LOW_LEVEL) ;
@@ -211,6 +199,7 @@ void init_camera()
 
 
 
+
 void ImageConsProd::ImageProducer()
 {
 
@@ -226,14 +215,9 @@ void ImageConsProd::ImageProducer()
                     g_pRgbBuffer);
             CameraReleaseImageBuffer(hCamera,pbyBuffer);
             while (prdIdx - csmIdx >= BUFFER_SIZE)  // 不能注释，注释了会出现零图，然后导致掉帧发生
-            {
-
-            };
 
             data[prdIdx % BUFFER_SIZE].img = src;
             prdIdx++;
-
-
 
         }
 
@@ -242,9 +226,6 @@ void ImageConsProd::ImageProducer()
     // 反初始化再free
     CameraUnInit(hCamera);
     free(g_pRgbBuffer);
-
-
-
 }
 
 
@@ -274,44 +255,18 @@ void ImageConsProd::ImageConsumer()
     // 畸变系数
     Mat dis = (Mat_<double>(5, 1) <<-0.0292, 0.1877, 0.0168,
                                     0.0168, 0.0000000000000000);
-//   數字識別 拍圖片用
+
+///////////////////數字識別 拍圖片用///////////////////
 //    string imgname1;
 //    int f = 0;
 //    string imgname2;
 //    int fff = 1000;
-
-
+////////////////////////////////////////////////////
     //double startTime, endTime;
     while (1){
         //startTime = getTickCount();
         while(prdIdx - csmIdx == 0);                                         //线程锁
-
-
-
-        //TODO: edit by liuhongjie
-//        set_maininfo(&main_info);
-        port.get_Mode(mode, shoot_speed, my_color
-/*                      main_info.now_frame.car_yaw_angel,
-                      main_info.now_frame.car_pitch_angel,
-                      main_info.now_frame.yaw_angel_speed,
-                      main_info.now_frame.pitch_angel_speed*/);
-//        if((fabs(main_info.pre_frame.car_yaw_angel - main_info.now_frame.car_yaw_angel) < 0.2)
-//                ||(fabs(main_info.pre_frame.car_pitch_angel - main_info.now_frame.car_pitch_angel) < 0.01))
-//        {
-//            cout<<main_info.pre_frame.car_pitch_angel - main_info.now_frame.car_pitch_angel<<endl;
-//            cout<<"------------remain----------"<<endl;
-//            main_info.now_frame.car_pitch_angel = main_info.pre_frame.car_yaw_angel;
-//            main_info.now_frame.car_yaw_angel = main_info.pre_frame.car_yaw_angel;
-//        }
-//        else
-//        {
-//            cout<<"##########change############"<<endl;
-//        }
-        //TODO: edit by liuhongjie
-
-
-
-
+        port.get_Mode(mode, shoot_speed, my_color);
 
 
         data[csmIdx % BUFFER_SIZE].img.copyTo(frame);                         //将Producer线程生产的图赋值给src
@@ -324,25 +279,12 @@ void ImageConsProd::ImageConsumer()
         time_now = (double)getTickCount();
 //        cout<<"delta time"<<(time_now - time_last) / getTickFrequency()*1000<< "ms"<<endl;
         time_last = time_now;
-//        imshow("frame", frame);
-
 
 
         if(mode==1 )    //自瞄
         {
-//            cout<<11111111111<<endl;
-            Armordetection armordetection = Armordetection(frame, last_roi.back(), loss_frame);
-//            cout<<222222222222<<endl;
-            // 开始检测装甲板
-    //        void begin_to_detect(Mat c, Mat d, double roi_scale, double armorH, double armorW,
-    //                             bool use_roi, int color_detection_mode, bool show_mask,
-    //                             bool show_light_filter_result, bool show_match_result,
-    //                             bool get_num_image, int num_img_size, bool show_num_img)
-
-
-
-//TODO: edit by liuhongjie
-        armordetection.begin_to_detect(cam, dis,        //Mat c, Mat d ------>相机内参, 畸变系数
+          Armordetection armordetection = Armordetection(frame, last_roi.back(), loss_frame);
+          armordetection.begin_to_detect(cam, dis,        //Mat c, Mat d ------>相机内参, 畸变系数
                                        roi_scale,       //double roi_scale -----> roi相对于旋转矩形的放大比例
                                        armor_h, armor_w,//double armorH, double armorW -----> 检测的装甲板的实际高，宽
                                        0,               //bool use_roi -----> 是否使用roi，建议调试时不使用，以观察算法的准确性，比赛时使用，以提高检测速度
@@ -352,8 +294,6 @@ void ImageConsProd::ImageConsumer()
                                        0,               // bool get_num_image -----> 是否提取装甲板上的数字,
                                        100, 0,          //int num_img_size, bool show_num_img ---> 提取装甲板上的数字的图像大小， 以及是否展示提取的数字
                                        num_pred);
-//            cout<<3333333333333333<<endl;
-//TODO: edit by liuhongjie
         //这里记录前10帧的roi信息
         if ( last_roi.size() >= 10)
         {
@@ -569,38 +509,14 @@ void ImageConsProd::ImageConsumer()
         yaw <<endl<< armordetection.yaw_angle;
         pitch << endl << armordetection.pitch_angle;
 
-
-//TODO: edit by liuhongjie
-//        main_info.now_frame.type = armordetection._flag;
-//        main_info.now_frame.tVec = armordetection._tVec;
-
-//        double send_pitch = vdata.pitch_angle.f;
-//        double send_yaw = vdata.yaw_angle.f;
-//        rp_vision_predict(main_info.pre_frame, main_info.now_frame, send_pitch, send_yaw ,mode);
-
-//        vdata.pitch_angle.f = send_pitch;
-//        vdata.yaw_angle.f = send_yaw;
-//        main_info.pre_frame = main_info.now_frame;
-
-//        Mat tvec = object_predict(main_info.now_frame, main_info.pre_frame,1);
-//        main_info.set_vdata_safe(vdata, tvec);
-//        vdata.pitch_angle.f = vdata.pitch_angle.f;
-//        vdata.yaw_angle.f = vdata.yaw_angle.f;
-
-
-
-
-
-//        cout<<"444444444444444444444"<<endl;
         // 展示检测效果
-        armordetection.put_text_into_img(vdata/*,main_info*/);
-//       cout<<"555555555555555555"<<endl;
+        armordetection.put_text_into_img(vdata);
         armordetection.show_img();
         waitKey(1);
-//TODO: edit by liuhongjie
 
 
-//數字識別 拍圖片用
+
+///////////////////数字识别拍图片用///////////////////
 //            char key = waitKey(1);
 //            if(key =='q')
 //            {
@@ -609,12 +525,11 @@ void ImageConsProd::ImageConsumer()
 //                imgname2 = to_string(fff++)+".jpg";
 //                imwrite(imgname2,armordetection.img_gramm);
 //            }
+////////////////////////////////////////////////////
+
+
 
           }
-
-
-
-
 
 
            if( mode == 2)
@@ -661,9 +576,9 @@ void ImageConsProd::ImageConsumer()
 
 
 
-
-
     }
+
+
     yaw.close();
     pitch.close();
     send_pitch.close();
