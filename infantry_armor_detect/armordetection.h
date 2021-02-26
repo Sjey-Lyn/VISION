@@ -37,10 +37,10 @@
 #define MAX_LightAngle2 55
 
 //裝甲板參數的修改
-#define SUB_Angle1 15   //  "\\"
-#define SUB_Angle2 15   //  "//"
-#define SUB_Angle3 16    //  "\/"
-#define SUB_Angle4 15   //  "/\"
+#define SUB_Angle1 20   //  "\\"
+#define SUB_Angle2 20   //  "//"
+#define SUB_Angle3 20    //  "\/"
+#define SUB_Angle4 20   //  "/\"
 
 #define Lights_High  0.6
 #define L_Armoe_WH_Radio 1
