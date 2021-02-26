@@ -69,135 +69,13 @@ ImageData data[BUFFER_SIZE];
 ///////////////////串口///////////////////
 SerialPort port("/dev/ttyUSB0");    //ls /dev/
 VisionData vdata;
-int mode = 1  , buff_four, shoot_speed, my_color;
+int mode = 1, shoot_speed, my_color;
 /////////////////////////////////////////
 
-
-
-
-
-
-void init_camera()
-{
-    ///////////////////初始化///////////////////
-    //////////////// Describe Appliance Info ////////////////////
-    int                     iCameraCounts = 1;
-    tSdkCameraDevInfo       tCameraEnumList;
-    tSdkCameraCapbility     tCapability;      //设备描述信息
-    int                     channel=3;
-    ////////////////// Init Camera //////////////////////////////
-    CameraSdkInit(1);
-    ////////////////// Enum Devices /////////////////////////////
-    iStatus = CameraEnumerateDevice(&tCameraEnumList,&iCameraCounts);   //成功时返回0
-    printf("Find camera count = %d\n", iCameraCounts);      //连接的设备个数
-    //没有连接设备
-    if(iCameraCounts==0){
-        return  ;
-    }
-    //相机初始化。初始化成功后，才能调用任何其他相机相关的操作接口
-    iStatus = CameraInit(&tCameraEnumList,-1,-1,&hCamera);
-    if (iStatus != CAMERA_STATUS_SUCCESS){
-        return ;
-    }else{
-        cout << "Init Camera Succeeeded!" << endl;
-    }
-    //获得相机的特性描述结构体。该结构体中包含了相机可设置的各种参数的范围信息。决定了相关函数的参数
-    CameraGetCapability(hCamera,&tCapability);
-
-    g_pRgbBuffer = (unsigned char*)malloc(
-                tCapability.sResolutionRange.iHeightMax*tCapability.sResolutionRange.iWidthMax*3);
-
-    /*让SDK进入工作模式，开始接收来自相机发送的图像
-    数据。如果当前相机是触发模式，则需要接收到
-    触发帧以后才会更新图像。    */
-    CameraPlay(hCamera);
-    CameraSetAeState(hCamera, FALSE);   //FALSE为手动曝光，TRUE为自动曝光
-    //////////////////////////////////////////////////////////////
-
-
-
-
-    ///////////////////设置硬触发///////////////////
-    //    CameraSetTriggerMode(hCamera,2);
-    //    // 设置硬触发的触发方式
-    //    CameraSetExtTrigSignalType(hCamera,EXT_TRIG_LOW_LEVEL) ;
-    //    //    EXT_TRIG_LEADING_EDGE = 0,     //上升沿触发，默认为该方式
-    //    //    EXT_TRIG_TRAILING_EDGE,        //下降沿触发
-    //    //    EXT_TRIG_HIGH_LEVEL,           //高电平触发
-    //    //    EXT_TRIG_LOW_LEVEL             //低电平触发
-
-
-    //////////////////////set param ///////////////////////////////////
-    /*其他的相机参数设置
-    例如 CameraSetExposureTime   CameraGetExposureTime  设置/读取曝光时间
-         CameraSetImageResolution  CameraGetImageResolution 设置/读取分辨率
-         CameraSetGamma、CameraSetConrast、CameraSetGain等设置图像伽马、对比度、RGB数字增益等等。
-         更多的参数的设置方法，，清参考MindVision_Demo。本例程只是为了演示如何将SDK中获取的图像，转成OpenCV的图像格式,以便调用OpenCV的图像处理函数进行后续开发
-    */
-    //调曝光时间
-    // iStatus = CameraSetExposureTime(hCamera, EXPOSURE);
-    if (iStatus != CAMERA_STATUS_SUCCESS)
-        return ;
-        else cout << "Init SDK Succeeeded!" << endl;
-
-    //读取曝光时间
-
-    double Exposure = 2000;
-    iStatus = CameraSetExposureTime(hCamera, Exposure);
-    double baoguang=0;
-    iStatus =CameraGetExposureTime(hCamera, &baoguang);
-    cout<<"曝光时间为:  "<<baoguang<<endl;
-
-    //读gama
-    int gama=0;
-    // iStatus =CameraSetGamma(hCamera,2);
-    iStatus =CameraGetGamma(hCamera,&gama);
-    cout<<"伽马值为：   "<<gama<<endl;
-
-    //读对比度
-    int contrast=0;
-    // iStatus =CameraSetGamma(hCamera,2);
-    iStatus =CameraGetGamma(hCamera,&contrast);
-    cout<<"对比度为：   "<<contrast<<endl;
-
-    // saturation
-
-    //读增益
-    int r=0,g=0,b=0;
-    // iStatus =CameraSetGain(hCamera,r,g,b);
-    iStatus =CameraGetGain(hCamera,&r,&g,&b);
-    cout<<"增益值为：  r "<<r<<"   g:   "<<g<<"b  :"<<b<<endl;
-
-
-    //CameraGetGain
-    //////////////////// 设置分辨率 //////////////////////
-
-    tSdkImageResolution pImageResolution = {0};
-    pImageResolution.iIndex = 0xff; //表示自定义分辨率（roi）
-    pImageResolution.iHeight = 720;
-    pImageResolution.iHeightFOV = 720;
-    pImageResolution.iVOffsetFOV = 0;
-    pImageResolution.iHOffsetFOV = 0;
-    pImageResolution.iWidth = 1280;
-    pImageResolution.iWidthFOV = 1280;
-    iStatus = CameraSetImageResolution(hCamera, &pImageResolution);
-
-    /*
-        设置图像处理的输出格式，彩色黑白都支持RGB24位
-    */
-    if(tCapability.sIspCapacity.bMonoSensor){
-        channel=1;
-        CameraSetIspOutFormat(hCamera,CAMERA_MEDIA_TYPE_MONO8);
-    }else{
-        channel=3;
-        CameraSetIspOutFormat(hCamera,CAMERA_MEDIA_TYPE_BGR8);
-    }
-
-
-
-}
-
-
+///////////////////补充函数///////////////////
+void Taitou(double &offset_x, double &offset_y, double last_dist);
+void init_camera();
+///////////////////////////////////////////
 
 
 void ImageConsProd::ImageProducer()
@@ -492,12 +370,19 @@ void ImageConsProd::ImageConsumer()
 #endif
 
 
-
-
+        double pit_offset, yaw_offset;
+        if(armordetection._flag == 1)
+        {
+            Taitou(pit_offset, yaw_offset, armordetection.distance);
+            cout<<"补偿值"<<pit_offset<<"\t"<<yaw_offset<<endl;
+            cout<<"未补偿前"<< armordetection.pitch_angle << "\t" << armordetection.yaw_angle<<endl;
+            armordetection.pitch_angle += pit_offset;
+            armordetection.yaw_angle += yaw_offset;
+            cout<<"补偿后"<<armordetection.pitch_angle << "\t" << armordetection.yaw_angle<<endl;
+        }
 
         vdata.dis.f = armordetection.distance;
         vdata.pitch_angle.f = armordetection.pitch_angle;
-//        cout<<"pitch="<<armordetection.pitch_angle*180/3.14<<endl;
         vdata.yaw_angle.f = armordetection.yaw_angle;
         vdata.isFindTarget = armordetection._flag;
         vdata.buff_change_four=0;
@@ -585,5 +470,209 @@ void ImageConsProd::ImageConsumer()
     send_yaw.close();
 }
 
-#endif //tiaoche
 
+
+
+void init_camera()
+{
+    ///////////////////初始化///////////////////
+    //////////////// Describe Appliance Info ////////////////////
+    int                     iCameraCounts = 1;
+    tSdkCameraDevInfo       tCameraEnumList;
+    tSdkCameraCapbility     tCapability;      //设备描述信息
+    int                     channel=3;
+    ////////////////// Init Camera //////////////////////////////
+    CameraSdkInit(1);
+    ////////////////// Enum Devices /////////////////////////////
+    iStatus = CameraEnumerateDevice(&tCameraEnumList,&iCameraCounts);   //成功时返回0
+    printf("Find camera count = %d\n", iCameraCounts);      //连接的设备个数
+    //没有连接设备
+    if(iCameraCounts==0){
+        return  ;
+    }
+    //相机初始化。初始化成功后，才能调用任何其他相机相关的操作接口
+    iStatus = CameraInit(&tCameraEnumList,-1,-1,&hCamera);
+    if (iStatus != CAMERA_STATUS_SUCCESS){
+        return ;
+    }else{
+        cout << "Init Camera Succeeeded!" << endl;
+    }
+    //获得相机的特性描述结构体。该结构体中包含了相机可设置的各种参数的范围信息。决定了相关函数的参数
+    CameraGetCapability(hCamera,&tCapability);
+
+    g_pRgbBuffer = (unsigned char*)malloc(
+                tCapability.sResolutionRange.iHeightMax*tCapability.sResolutionRange.iWidthMax*3);
+
+    /*让SDK进入工作模式，开始接收来自相机发送的图像
+    数据。如果当前相机是触发模式，则需要接收到
+    触发帧以后才会更新图像。    */
+    CameraPlay(hCamera);
+    CameraSetAeState(hCamera, FALSE);   //FALSE为手动曝光，TRUE为自动曝光
+    //////////////////////////////////////////////////////////////
+
+
+
+
+    ///////////////////设置硬触发///////////////////
+    //    CameraSetTriggerMode(hCamera,2);
+    //    // 设置硬触发的触发方式
+    //    CameraSetExtTrigSignalType(hCamera,EXT_TRIG_LOW_LEVEL) ;
+    //    //    EXT_TRIG_LEADING_EDGE = 0,     //上升沿触发，默认为该方式
+    //    //    EXT_TRIG_TRAILING_EDGE,        //下降沿触发
+    //    //    EXT_TRIG_HIGH_LEVEL,           //高电平触发
+    //    //    EXT_TRIG_LOW_LEVEL             //低电平触发
+
+
+    //////////////////////set param ///////////////////////////////////
+    /*其他的相机参数设置
+    例如 CameraSetExposureTime   CameraGetExposureTime  设置/读取曝光时间
+         CameraSetImageResolution  CameraGetImageResolution 设置/读取分辨率
+         CameraSetGamma、CameraSetConrast、CameraSetGain等设置图像伽马、对比度、RGB数字增益等等。
+         更多的参数的设置方法，，清参考MindVision_Demo。本例程只是为了演示如何将SDK中获取的图像，转成OpenCV的图像格式,以便调用OpenCV的图像处理函数进行后续开发
+    */
+    //调曝光时间
+    // iStatus = CameraSetExposureTime(hCamera, EXPOSURE);
+    if (iStatus != CAMERA_STATUS_SUCCESS)
+        return ;
+        else cout << "Init SDK Succeeeded!" << endl;
+
+    //读取曝光时间
+
+    double Exposure = 2000;
+    iStatus = CameraSetExposureTime(hCamera, Exposure);
+    double baoguang=0;
+    iStatus =CameraGetExposureTime(hCamera, &baoguang);
+    cout<<"曝光时间为:  "<<baoguang<<endl;
+
+    //读gama
+    int gama=0;
+    // iStatus =CameraSetGamma(hCamera,2);
+    iStatus =CameraGetGamma(hCamera,&gama);
+    cout<<"伽马值为：   "<<gama<<endl;
+
+    //读对比度
+    int contrast=0;
+    // iStatus =CameraSetGamma(hCamera,2);
+    iStatus =CameraGetGamma(hCamera,&contrast);
+    cout<<"对比度为：   "<<contrast<<endl;
+
+    // saturation
+
+    //读增益
+    int r=0,g=0,b=0;
+    // iStatus =CameraSetGain(hCamera,r,g,b);
+    iStatus =CameraGetGain(hCamera,&r,&g,&b);
+    cout<<"增益值为：  r "<<r<<"   g:   "<<g<<"b  :"<<b<<endl;
+
+
+    //CameraGetGain
+    //////////////////// 设置分辨率 //////////////////////
+
+    tSdkImageResolution pImageResolution = {0};
+    pImageResolution.iIndex = 0xff; //表示自定义分辨率（roi）
+    pImageResolution.iHeight = 720;
+    pImageResolution.iHeightFOV = 720;
+    pImageResolution.iVOffsetFOV = 0;
+    pImageResolution.iHOffsetFOV = 0;
+    pImageResolution.iWidth = 1280;
+    pImageResolution.iWidthFOV = 1280;
+    iStatus = CameraSetImageResolution(hCamera, &pImageResolution);
+
+    /*
+        设置图像处理的输出格式，彩色黑白都支持RGB24位
+    */
+    if(tCapability.sIspCapacity.bMonoSensor){
+        channel=1;
+        CameraSetIspOutFormat(hCamera,CAMERA_MEDIA_TYPE_MONO8);
+    }else{
+        channel=3;
+        CameraSetIspOutFormat(hCamera,CAMERA_MEDIA_TYPE_BGR8);
+    }
+
+
+
+}
+
+
+
+
+void Taitou(double &offset_yaw,double &offset_pit,double last_dist)
+{
+
+    if(last_dist < 3000)
+    {
+        //低速射击
+        if(shoot_speed == 15)
+        {
+            offset_yaw = 0;
+            offset_pit = 0;
+            cout << "短距离低速抬头补偿" << endl;
+        }
+        //中速射击
+        if(shoot_speed == 18)
+        {
+            offset_yaw = 0;
+            offset_pit = 0;
+            cout << "短距离中速抬头补偿" << endl;
+        }
+        //高速射击
+        if(shoot_speed == 30)
+        {
+            offset_yaw = 0;
+            offset_pit = 0;
+            cout << "短距离高速抬头补偿" << endl;
+        }
+    }
+
+    else if(last_dist >= 3000 && last_dist < 4000)
+    {
+        //低速射击
+        if(shoot_speed == 15)
+        {
+            offset_yaw = 0;
+            offset_pit = 0;
+            cout << "3-4米低速速抬头补偿" << endl;
+        }
+        //中速射击
+        if(shoot_speed == 18)
+        {
+            offset_yaw = 0;
+            offset_pit = 0;
+            cout << "3-4米中速抬头补偿" << endl;
+        }
+        //高速射击
+        if(shoot_speed == 30)
+        {
+            offset_yaw = 0;
+            offset_pit = 0;
+            cout << "3-4米高速抬头补偿" << endl;
+        }
+    }
+      //距离大于4m//
+   else
+   {
+        //低速射击
+        if(shoot_speed == 15){
+            offset_yaw = 0;
+            offset_pit = 0;
+            cout << "大于4米低速速抬头补偿" << endl;
+        }
+        //中速射击
+        if(shoot_speed == 18){
+            offset_yaw = 0;
+            offset_pit = 0;
+            cout << "大于4米中速速抬头补偿" << endl;
+        }
+        //高速射击
+        if(shoot_speed == 30){
+            offset_yaw = 0;
+            offset_pit = 0;
+            cout << "大于4米高速速抬头补偿" << endl;
+        }
+   }
+
+}
+
+
+
+#endif //tiaoche

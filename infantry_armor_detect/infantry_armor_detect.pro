@@ -38,10 +38,8 @@ SOURCES += \
     Energy.cpp \
 #    object_predict.cpp \
     run_vedio.cpp \
-    numpredict.cpp \
-    CameraApi.h \
-    CameraStatus.h \
-    CameraDefine.h
+    numpredict.cpp
+
 
 
 HEADERS += \
@@ -54,4 +52,7 @@ HEADERS += \
     CRC_Check.h \
     Energy.h \
 #    object_predict.h
-    numpredict.h
+    numpredict.h \
+    CameraApi.h \
+    CameraStatus.h \
+    CameraDefine.h
