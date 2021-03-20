@@ -6,11 +6,13 @@ void drop_frame_ctrl::judge_drop_frame()
     if(lost_time > 0 && lost_time < LOST_OBJECT)
     {
         drop_frame = 1;
+//        drop_frame_recorrect();
     }
     else
     {
         drop_frame = 0;
     }
+
 }
 
 
@@ -178,7 +180,11 @@ void drop_frame_ctrl::get_aspeed()
 
 void drop_frame_ctrl::drop_frame_recorrect()
 {
-    drop_yaw = yaw_vec.back() + Alpha *y_a_speed * lost_time;
-    drop_pitch = pitch_vec.back() + Alpha *p_a_speed *lost_time;
-    drop_distance = last_distance;
+    if(yaw_vec.size() > 0 && pitch_vec.size() >0)
+    {
+        drop_yaw = yaw_vec.back() + Alpha *y_a_speed * lost_time;
+        drop_pitch = pitch_vec.back() + Alpha *p_a_speed *lost_time;
+        drop_distance = last_distance;
+    }
+
 }

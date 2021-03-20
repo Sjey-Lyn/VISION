@@ -53,7 +53,7 @@ ImageData data[BUFFER_SIZE];
 
 //VideoWriter vw("videoTest.avi",VideoWriter::fourcc('M','J','P','G'),25,Size(1280,720),true); // 定义写入视频对象
 
-
+//#define DEAL_DIAOZHEN
 ///////////////////串口///////////////////
 SerialPort port("/dev/ttyUSB0");    //ls /dev/
 VisionData vdata;
@@ -188,8 +188,7 @@ void ImageConsProd::ImageConsumer()
         }
 
         dfc.insert_values(armordetection._flag,armordetection.pitch_angle, armordetection.yaw_angle, armordetection.distance);
-        dfc.get_aspeed();
-
+        dfc.judge_drop_frame();
         // 嵌入到识别代码
         // 识别陀螺函数,输入当前帧是否识别now_status(0,1),上一帧是否识别pre_status(0,1),
         // 此外,还需要输入距离和yaw轴角度(没有识别到随便给就好)
@@ -202,40 +201,44 @@ void ImageConsProd::ImageConsumer()
 //        }
         // 如果识别出陀螺状态,采用陀螺处理,
         // 并将要发给电控的三个值置为asc类的spinning_pitch、spinning_yaw、spinning_distance
-        int flag_temp = 0;
-        if(asc.is_spinning && flag_temp)
-        {
-           cout<<"进入了反陀螺"<<endl;
-           //根据存储的信息计算定住的位置
-           asc.spinning_process(0);
-           vdata.pitch_angle.f = asc.spinning_pitch;
-           cout<<"error:"<<vdata.pitch_angle.f<<endl;
-           vdata.yaw_angle.f = asc.spinning_yaw;
-           vdata.dis.f = asc.spinning_distance;
-           vdata.isFindTarget = armordetection._flag;
-           vdata.drop_frame=0;
-           vdata.anti_top=1;
-           vdata.anti_top_change_armor = 0;
-           vdata.nearFace = 0;
-           vdata.isfindDafu= 0;
+//        int flag_temp = 0;
+//        if(asc.is_spinning && flag_temp)
+//        {
+//           cout<<"进入了反陀螺"<<endl;
+//           //根据存储的信息计算定住的位置
+//           asc.spinning_process(0);
+//           vdata.pitch_angle.f = asc.spinning_pitch;
+//           cout<<"error:"<<vdata.pitch_angle.f<<endl;
+//           vdata.yaw_angle.f = asc.spinning_yaw;
+//           vdata.dis.f = asc.spinning_distance;
+//           vdata.isFindTarget = armordetection._flag;
+//           vdata.drop_frame=0;
+//           vdata.anti_top=1;
+//           vdata.anti_top_change_armor = 0;
+//           vdata.nearFace = 0;
+//           vdata.isfindDafu= 0;
 
-        }
-        else
-        {
+//        }
+//        else
+//        {
         // 没有识别出陀螺状态时,需要把asc的spinning_process_param置0
         // 发送电控的数据按正常情况下发送即可
-           asc.spinning_process_param = 0;
+//           asc.spinning_process_param = 0;
            if(dfc.drop_frame)
            {
-//               cout<<"掉帧了"<<endl;
+               dfc.get_aspeed();
+               dfc.drop_frame_recorrect();
                vdata.dis.f = dfc.drop_distance;
                vdata.pitch_angle.f = dfc.drop_pitch;
                vdata.yaw_angle.f = dfc.drop_yaw;
                vdata.isFindTarget = 1;
-               if(fabs(pre_yaw_angle - dfc.drop_yaw) > 4)
+               vdata.drop_frame = 1;
+//               cout<<"pitch"<<vdata.pitch_angle.f<<endl;
+//               cout<<"yaw"<<vdata.yaw_angle.f<<endl;
+               if(fabs(pre_yaw_angle - dfc.drop_yaw) > 5.5)
                {
                   vdata.anti_top_change_armor=1;
-//                  cout<<"-----------------切换了-------------------"<<endl;
+                  cout<<"-----------------切换了-------------------"<<endl;
                }
                else
                {
@@ -270,10 +273,10 @@ void ImageConsProd::ImageConsumer()
            if(armordetection._flag || dfc.drop_frame)
            {
                Taitou(pit_offset, armordetection.distance);
-               cout<<"补偿值"<<pit_offset<<endl;
-               cout<<"未补偿前"<< vdata.pitch_angle.f<<endl;
+//               cout<<"补偿值"<<pit_offset<<endl;
+//               cout<<"未补偿前"<< vdata.pitch_angle.f<<endl;
                vdata.pitch_angle.f += pit_offset;
-               cout<<"补偿后"<<vdata.pitch_angle.f<<endl;
+//               cout<<"补偿后"<<vdata.pitch_angle.f<<endl;
            }
 
 #ifdef DEAL_DIAOZHEN
@@ -283,7 +286,8 @@ void ImageConsProd::ImageConsumer()
        yaw <<endl<< armordetection.yaw_angle;
        pitch << endl << armordetection.pitch_angle;
 #endif
-        }
+
+
 
 ///////////////////作为下一帧的上一帧///////////////
        pre_flag = armordetection._flag;
@@ -306,6 +310,7 @@ void ImageConsProd::ImageConsumer()
 //        armordetection.put_text_into_img(vdata);
 //        armordetection.show_img();
 //        waitKey(1);
+
           }
 
 
